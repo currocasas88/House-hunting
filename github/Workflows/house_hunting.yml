@@ -1,0 +1,42 @@
+name: House Hunting Agent
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Every Monday at 9am UTC
+  workflow_dispatch:
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run House Hunting Agent
+        env:
+          RAPIDAPI_KEY:       ${{ secrets.RAPIDAPI_KEY }}
+          GEMINI_API_KEY:     ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
+        run: python main.py
+
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: property-digest-${{ github.run_number }}
+          path: |
+            raw_listings.txt
+            scored_listings.txt
+          retention-days: 7
